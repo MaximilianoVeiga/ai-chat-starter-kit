@@ -1,7 +1,4 @@
-/* Import Tailwind CSS */
-@import "tailwindcss";
-
-/* Import Google Fonts */
+/* Import Google Fonts first - @import statements must come before all other CSS */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* Global reset and base styles handled by Tailwind */

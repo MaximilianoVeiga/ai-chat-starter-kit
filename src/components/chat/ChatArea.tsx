@@ -5,15 +5,47 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
-import { Send, Bot, User, Sparkles, MessageSquare } from 'lucide-react'
+import { MessageItem } from './MessageItem'
+import { useKeyboardShortcuts, CHAT_SHORTCUTS } from '@/hooks/useKeyboardShortcuts'
+import { Send, Bot, Sparkles, MessageSquare } from 'lucide-react'
+import { sanitizeInput } from '@/lib/utils-enhanced'
+import { validateMessageContent, checkRateLimit } from '@/lib/validation'
+import { useToast } from '@/components/ui/toast'
 
 export function ChatArea() {
-  const { state, sendMessage, getCurrentConversation } = useChat()
+  const { state, sendMessage, editMessage, deleteMessage, getCurrentConversation } = useChat()
+  const { addToast } = useToast()
   const [message, setMessage] = useState('')
+  const [messageError, setMessageError] = useState<string | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const currentConversation = getCurrentConversation()
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts(CHAT_SHORTCUTS)
+
+  // Handle keyboard shortcut events
+  useEffect(() => {
+    const handleKeyboardShortcut = (event: CustomEvent) => {
+      const { action } = event.detail
+      
+      switch (action) {
+        case 'focus-message-input':
+          textareaRef.current?.focus()
+          break
+        case 'escape':
+          setMessage('')
+          textareaRef.current?.blur()
+          break
+      }
+    }
+
+    window.addEventListener('keyboard-shortcut', handleKeyboardShortcut as EventListener)
+    return () => {
+      window.removeEventListener('keyboard-shortcut', handleKeyboardShortcut as EventListener)
+    }
+  }, [])
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
@@ -29,8 +61,33 @@ export function ChatArea() {
     e.preventDefault()
     if (!message.trim() || state.isLoading) return
 
-    sendMessage(message.trim())
+    // Validate message content
+    const validation = validateMessageContent(message.trim())
+    if (!validation.isValid) {
+      setMessageError(validation.error || 'Invalid message')
+      addToast({
+        type: 'error',
+        title: 'Invalid message',
+        description: validation.error
+      })
+      return
+    }
+
+    // Rate limiting check
+    const userKey = `user-${Date.now()}`
+    if (!checkRateLimit(userKey, 20, 60000)) { // 20 messages per minute
+      addToast({
+        type: 'warning',
+        title: 'Rate limit exceeded',
+        description: 'Please wait before sending another message'
+      })
+      return
+    }
+
+    const sanitizedMessage = sanitizeInput(message.trim())
+    sendMessage(sanitizedMessage)
     setMessage('')
+    setMessageError(null)
     
     // Reset textarea height
     if (textareaRef.current) {
@@ -45,8 +102,24 @@ export function ChatArea() {
     }
   }
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const handleEditMessage = (messageId: string, content: string) => {
+    // Validate edited content
+    const validation = validateMessageContent(content)
+    if (!validation.isValid) {
+      addToast({
+        type: 'error',
+        title: 'Invalid message',
+        description: validation.error
+      })
+      return
+    }
+    
+    const sanitizedContent = sanitizeInput(content)
+    editMessage(messageId, sanitizedContent)
+  }
+
+  const handleDeleteMessage = (messageId: string) => {
+    deleteMessage(messageId)
   }
 
   if (!currentConversation) {
@@ -84,7 +157,7 @@ export function ChatArea() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" role="main" aria-label="Chat conversation">
       {/* Chat Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm px-6 py-4">
         <div className="flex items-center justify-between">
@@ -118,44 +191,13 @@ export function ChatArea() {
             </div>
           ) : (
             currentConversation.messages.map((msg) => (
-              <div
+              <MessageItem
                 key={msg.id}
-                className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group`}
-              >
-                {msg.role === 'assistant' && (
-                  <Avatar className="h-9 w-9 mt-1 ring-2 ring-primary/20">
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-purple-500 text-white">
-                      <Bot className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                
-                <div className={`max-w-[75%] ${msg.role === 'user' ? 'order-first' : ''}`}>
-                  <Card className={`p-4 shadow-sm transition-all duration-200 hover:shadow-md ${
-                    msg.role === 'user' 
-                      ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground border-0' 
-                      : 'bg-card border hover:bg-muted/50'
-                  }`}>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                  </Card>
-                  
-                  <div className={`flex items-center gap-2 mt-2 px-1 ${
-                    msg.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}>
-                    <p className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                      {formatTime(msg.timestamp)}
-                    </p>
-                  </div>
-                </div>
-
-                {msg.role === 'user' && (
-                  <Avatar className="h-9 w-9 mt-1 ring-2 ring-muted">
-                    <AvatarFallback className="bg-muted">
-                      <User className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
+                message={msg}
+                onEdit={handleEditMessage}
+                onDelete={handleDeleteMessage}
+                showTimestamp={true}
+              />
             ))
           )}
           
@@ -188,11 +230,18 @@ export function ChatArea() {
             <Textarea
               ref={textareaRef}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                setMessage(e.target.value)
+                setMessageError(null)
+              }}
               onKeyDown={handleKeyDown}
               placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
-              className="min-h-[60px] max-h-[200px] resize-none pr-12 bg-background border-border focus:border-primary transition-colors"
+              className={`min-h-[60px] max-h-[200px] resize-none pr-12 bg-background transition-colors ${
+                messageError ? 'border-destructive focus:border-destructive' : 'border-border focus:border-primary'
+              }`}
               disabled={state.isLoading}
+              aria-invalid={!!messageError}
+              aria-describedby={messageError ? 'message-error' : undefined}
             />
             <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
               {message.length > 0 && (

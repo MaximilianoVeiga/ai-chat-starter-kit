@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useReducer } from 'react'
+import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { Conversation, Message } from '@/types/chat'
+import { conversationStorage, currentConversationStorage } from '@/lib/storage'
+import { generateId, generateConversationTitle } from '@/lib/utils-enhanced'
 
 interface ChatState {
   conversations: Conversation[]
@@ -13,6 +15,8 @@ type ChatAction =
   | { type: 'ADD_CONVERSATION'; payload: Conversation }
   | { type: 'SET_CURRENT_CONVERSATION'; payload: string }
   | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }
+  | { type: 'EDIT_MESSAGE'; payload: { conversationId: string; messageId: string; content: string } }
+  | { type: 'DELETE_MESSAGE'; payload: { conversationId: string; messageId: string } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'DELETE_CONVERSATION'; payload: string }
 
@@ -43,7 +47,39 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
                 ...conv,
                 messages: [...conv.messages, action.payload.message],
                 updatedAt: new Date(),
-                title: conv.messages.length === 0 ? action.payload.message.content.slice(0, 50) + '...' : conv.title
+                title: conv.messages.length === 0 && action.payload.message.role === 'user' 
+                  ? generateConversationTitle(action.payload.message.content) 
+                  : conv.title
+              }
+            : conv
+        )
+      }
+    case 'EDIT_MESSAGE':
+      return {
+        ...state,
+        conversations: state.conversations.map(conv =>
+          conv.id === action.payload.conversationId
+            ? {
+                ...conv,
+                messages: conv.messages.map(msg =>
+                  msg.id === action.payload.messageId
+                    ? { ...msg, content: action.payload.content }
+                    : msg
+                ),
+                updatedAt: new Date()
+              }
+            : conv
+        )
+      }
+    case 'DELETE_MESSAGE':
+      return {
+        ...state,
+        conversations: state.conversations.map(conv =>
+          conv.id === action.payload.conversationId
+            ? {
+                ...conv,
+                messages: conv.messages.filter(msg => msg.id !== action.payload.messageId),
+                updatedAt: new Date()
               }
             : conv
         )
@@ -66,6 +102,8 @@ interface ChatContextType {
   dispatch: React.Dispatch<ChatAction>
   createNewConversation: () => void
   sendMessage: (content: string) => void
+  editMessage: (messageId: string, content: string) => void
+  deleteMessage: (messageId: string) => void
   deleteConversation: (conversationId: string) => void
   getCurrentConversation: () => Conversation | null
 }
@@ -75,9 +113,35 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined)
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState)
 
+  // Load conversations from storage on mount
+  useEffect(() => {
+    const savedConversations = conversationStorage.load()
+    const savedCurrentConversationId = currentConversationStorage.load()
+    
+    if (savedConversations.length > 0) {
+      dispatch({ type: 'SET_CONVERSATIONS', payload: savedConversations })
+      
+      if (savedCurrentConversationId && savedConversations.find(c => c.id === savedCurrentConversationId)) {
+        dispatch({ type: 'SET_CURRENT_CONVERSATION', payload: savedCurrentConversationId })
+      }
+    }
+  }, [])
+
+  // Save conversations to storage whenever they change
+  useEffect(() => {
+    if (state.conversations.length > 0) {
+      conversationStorage.save(state.conversations)
+    }
+  }, [state.conversations])
+
+  // Save current conversation ID to storage whenever it changes
+  useEffect(() => {
+    currentConversationStorage.save(state.currentConversationId)
+  }, [state.currentConversationId])
+
   const createNewConversation = () => {
     const newConversation: Conversation = {
-      id: Date.now().toString(),
+      id: generateId(),
       title: 'New Chat',
       messages: [],
       createdAt: new Date(),
@@ -90,7 +154,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (!state.currentConversationId) return
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateId(),
       content,
       role: 'user',
       timestamp: new Date(),
@@ -106,8 +170,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     
     setTimeout(() => {
       const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `This is a mock response to: "${content}". In a real application, this would be connected to an AI service like OpenAI, Claude, or similar.`,
+        id: generateId(),
+        content: `This is a mock response to: "${content}". In a real application, this would be connected to an AI service like OpenAI, Claude, or similar.\n\n**Key features of this starter kit:**\n- ✅ Persistent conversation storage\n- ✅ Dark/light theme toggle\n- ✅ Copy, edit, delete messages\n- ✅ Export/import conversations\n- ✅ Search functionality\n- ✅ Error handling\n- ✅ Toast notifications\n\nTry asking about any of these features!`,
         role: 'assistant',
         timestamp: new Date(),
       }
@@ -124,6 +188,31 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'DELETE_CONVERSATION', payload: conversationId })
   }
 
+  const editMessage = (messageId: string, content: string) => {
+    if (!state.currentConversationId) return
+    
+    dispatch({ 
+      type: 'EDIT_MESSAGE', 
+      payload: { 
+        conversationId: state.currentConversationId, 
+        messageId, 
+        content 
+      } 
+    })
+  }
+
+  const deleteMessage = (messageId: string) => {
+    if (!state.currentConversationId) return
+    
+    dispatch({ 
+      type: 'DELETE_MESSAGE', 
+      payload: { 
+        conversationId: state.currentConversationId, 
+        messageId 
+      } 
+    })
+  }
+
   const getCurrentConversation = () => {
     return state.conversations.find(conv => conv.id === state.currentConversationId) || null
   }
@@ -134,6 +223,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       dispatch,
       createNewConversation,
       sendMessage,
+      editMessage,
+      deleteMessage,
       deleteConversation,
       getCurrentConversation,
     }}>

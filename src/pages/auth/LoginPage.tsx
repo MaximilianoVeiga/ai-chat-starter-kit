@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/components/ui/toast'
+import { validateEmail } from '@/lib/validation'
+import { userDataStorage } from '@/lib/storage'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 
 export function LoginPage() {
@@ -11,16 +14,57 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const { addToast } = useToast()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrors({})
+    
+    // Validate form
+    const newErrors: { email?: string; password?: string } = {}
+    
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error
+    }
+    
+    if (!password.trim()) {
+      newErrors.password = 'Password is required'
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      addToast({
+        type: 'error',
+        title: 'Validation failed',
+        description: 'Please fix the errors and try again'
+      })
+      return
+    }
+    
     setIsLoading(true)
     
     // Mock authentication - in real app, call your auth API
     setTimeout(() => {
       localStorage.setItem('isAuthenticated', 'true')
-      localStorage.setItem('userEmail', email)
+      
+      // Extract name from email for demo purposes
+      const name = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim()
+      
+      // Save user data
+      userDataStorage.save({ 
+        name: name || 'User',
+        email: email 
+      })
+      
+      addToast({
+        type: 'success',
+        title: 'Welcome back!',
+        description: 'You have been signed in successfully'
+      })
+      
       setIsLoading(false)
       navigate('/chat')
     }, 1000)
@@ -60,10 +104,24 @@ export function LoginPage() {
                     type="email"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-11"
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (errors.email) {
+                        setErrors(prev => ({ ...prev, email: undefined }))
+                      }
+                    }}
+                    className={`pl-10 h-11 ${
+                      errors.email ? 'border-destructive focus:border-destructive' : ''
+                    }`}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
                     required
                   />
+                  {errors.email && (
+                    <p id="email-error" className="text-sm text-destructive mt-1">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -79,10 +137,24 @@ export function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-11"
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      if (errors.password) {
+                        setErrors(prev => ({ ...prev, password: undefined }))
+                      }
+                    }}
+                    className={`pl-10 pr-10 h-11 ${
+                      errors.password ? 'border-destructive focus:border-destructive' : ''
+                    }`}
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
                     required
                   />
+                  {errors.password && (
+                    <p id="password-error" className="text-sm text-destructive mt-1">
+                      {errors.password}
+                    </p>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
