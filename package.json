@@ -1,13 +1,48 @@
 {
-  "name": "boilerplate-vite-ts-tailwindcss-shadcn",
+  "name": "ai-chat-starter-kit",
+  "description": "A modern AI chat application starter kit built with React, TypeScript, Vite, Tailwind CSS, and shadcn/ui",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "keywords": [
+    "ai",
+    "chat",
+    "react",
+    "typescript",
+    "vite",
+    "tailwindcss",
+    "shadcn-ui",
+    "starter-kit",
+    "boilerplate"
+  ],
+  "author": {
+    "name": "Maximiliano Veiga",
+    "email": "maximiliano.neto@thehorizon.dev"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MaximilianoVeiga/ai-chat-starter-kit.git"
+  },
+  "homepage": "https://github.com/MaximilianoVeiga/ai-chat-starter-kit#readme",
+  "bugs": {
+    "url": "https://github.com/MaximilianoVeiga/ai-chat-starter-kit/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "preview": "vite preview",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "start": "npm run dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
