@@ -85,6 +85,15 @@ export const conversationStorage = {
       reader.onerror = () => reject(new Error('Failed to read file'))
       reader.readAsText(file)
     })
+  },
+
+  // Additional methods for compatibility
+  getAll: () => conversationStorage.load(),
+  saveAll: (conversations: Conversation[]) => conversationStorage.save(conversations),
+  delete: (conversationId: string) => {
+    const conversations = conversationStorage.load()
+    const filtered = conversations.filter(c => c.id !== conversationId)
+    conversationStorage.save(filtered)
   }
 }
 
@@ -100,7 +109,10 @@ export const currentConversationStorage = {
 
   load: (): string | null => {
     return localStorage.getItem(STORAGE_KEYS.CURRENT_CONVERSATION)
-  }
+  },
+
+  // Additional method for compatibility
+  get: () => currentConversationStorage.load()
 }
 
 // User settings storage

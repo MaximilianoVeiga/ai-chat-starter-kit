@@ -1,5 +1,5 @@
-import React from 'react'
 import { cn } from '@/lib/utils'
+import { useMarkdownDetection } from '@/hooks/useMarkdownDetection'
 
 interface MarkdownRendererProps {
   content: string
@@ -52,7 +52,7 @@ function parseMarkdown(text: string): string {
   html = html.replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-muted-foreground/20 pl-4 italic text-muted-foreground my-2">$1</blockquote>')
 
   // Unordered lists - item or * item
-  html = html.replace(/^[\-\*] (.*$)/gim, '<li class="ml-4 list-disc">$1</li>')
+  html = html.replace(/^[-*] (.*$)/gim, '<li class="ml-4 list-disc">$1</li>')
   html = html.replace(/(<li.*<\/li>)/s, '<ul class="my-2">$1</ul>')
 
   // Ordered lists 1. item
@@ -98,22 +98,5 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
   )
 }
 
-// Hook to detect if content contains markdown
-export function useMarkdownDetection(content: string): boolean {
-  return React.useMemo(() => {
-    const markdownPatterns = [
-      /^#{1,6}\s/m, // Headers
-      /\*\*.*?\*\*/, // Bold
-      /\*.*?\*/, // Italic
-      /`.*?`/, // Inline code
-      /```[\s\S]*?```/, // Code blocks
-      /\[.*?\]\(.*?\)/, // Links
-      /^>\s/m, // Blockquotes
-      /^[\-\*]\s/m, // Lists
-      /^\d+\.\s/m, // Ordered lists
-      /~~.*?~~/, // Strikethrough
-    ]
+// Export separately to avoid Fast Refresh issues
 
-    return markdownPatterns.some(pattern => pattern.test(content))
-  }, [content])
-}

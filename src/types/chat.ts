@@ -1,8 +1,9 @@
 export interface Message {
   id: string
   content: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'
   timestamp: Date
+  attachments?: string[] // File IDs
 }
 
 export interface Conversation {

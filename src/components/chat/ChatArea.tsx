@@ -5,18 +5,29 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { MessageItem } from './MessageItem'
+import { FileUpload } from '@/components/FileUpload'
 import { useKeyboardShortcuts, CHAT_SHORTCUTS } from '@/hooks/useKeyboardShortcuts'
-import { Send, Bot, Sparkles, MessageSquare } from 'lucide-react'
+import { Send, Bot, Sparkles, MessageSquare, Menu, Paperclip, X, FileText } from 'lucide-react'
 import { sanitizeInput } from '@/lib/utils-enhanced'
 import { validateMessageContent, checkRateLimit } from '@/lib/validation'
 import { useToast } from '@/components/ui/toast'
+import { useSidebar } from '@/components/ui/sidebar'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export function ChatArea() {
-  const { state, sendMessage, editMessage, deleteMessage, getCurrentConversation } = useChat()
+  const { state, sendMessage, editMessage, deleteMessage, getCurrentConversation, addUploadedFiles, removeUploadedFile } = useChat()
   const { addToast } = useToast()
+  const { toggleSidebar } = useSidebar()
   const [message, setMessage] = useState('')
   const [messageError, setMessageError] = useState<string | null>(null)
+  const [showFileUpload, setShowFileUpload] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -85,7 +96,8 @@ export function ChatArea() {
     }
 
     const sanitizedMessage = sanitizeInput(message.trim())
-    sendMessage(sanitizedMessage)
+    const fileIds = state.uploadedFiles.map(f => f.id)
+    sendMessage(sanitizedMessage, fileIds.length > 0 ? fileIds : undefined)
     setMessage('')
     setMessageError(null)
     
@@ -124,31 +136,31 @@ export function ChatArea() {
 
   if (!currentConversation) {
     return (
-      <div className="flex h-full items-center justify-center bg-gradient-to-br from-background to-muted/20">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full blur-3xl" />
-            <div className="relative bg-gradient-to-r from-primary to-purple-500 rounded-full p-6 mx-auto w-24 h-24 flex items-center justify-center">
-              <Sparkles className="h-12 w-12 text-white" />
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center max-w-lg mx-auto p-8">
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-full blur-2xl" />
+            <div className="relative bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-full p-5 mx-auto w-20 h-20 flex items-center justify-center">
+              <Sparkles className="h-10 w-10 text-primary" />
             </div>
           </div>
           
-          <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-semibold mb-3">
             Welcome to AI Chat
           </h2>
           
-          <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
-            Start a conversation with our AI assistant. Ask questions, get help, or just chat!
+          <p className="text-muted-foreground mb-6">
+            Start a conversation with our AI assistant
           </p>
           
-          <div className="grid grid-cols-1 gap-4 text-sm">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              <span>Select a conversation from the sidebar</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <MessageSquare className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="text-left">Select a chat from sidebar</span>
             </div>
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border">
-              <Bot className="h-5 w-5 text-primary" />
-              <span>Or create a new chat to get started</span>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+              <Bot className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="text-left">Create a new conversation</span>
             </div>
           </div>
         </div>
@@ -157,24 +169,32 @@ export function ChatArea() {
   }
 
   return (
-    <div className="flex h-full flex-col" role="main" aria-label="Chat conversation">
+    <div className="flex h-full flex-col overflow-hidden" role="main" aria-label="Chat conversation">
       {/* Chat Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm px-6 py-4">
+      <header className="flex-shrink-0 border-b bg-card/50 backdrop-blur-sm px-4 py-3 lg:px-6 lg:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-8 w-8"
+              onClick={toggleSidebar}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse" />
-              <h1 className="text-xl font-semibold">{currentConversation.title}</h1>
+              <h1 className="text-lg lg:text-xl font-semibold truncate">{currentConversation.title}</h1>
             </div>
           </div>
-          <div className="text-sm text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+          <div className="text-sm text-muted-foreground bg-muted/50 px-2 lg:px-3 py-1 rounded-full">
             {currentConversation.messages.length} {currentConversation.messages.length === 1 ? 'message' : 'messages'}
           </div>
         </div>
       </header>
 
       {/* Messages */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 overflow-y-auto px-4 py-4 lg:px-6">
         <div className="space-y-4">
           {currentConversation.messages.length === 0 ? (
             <div className="text-center py-16">
@@ -223,9 +243,32 @@ export function ChatArea() {
         </div>
       </ScrollArea>
 
+      {/* Uploaded Files Display */}
+      {state.uploadedFiles.length > 0 && (
+        <div className="flex-shrink-0 border-t bg-muted/30 px-4 py-2 lg:px-6">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground">Attached:</span>
+            {state.uploadedFiles.map(file => (
+              <Badge key={file.id} variant="secondary" className="gap-1">
+                <FileText className="h-3 w-3" />
+                <span className="text-xs">{file.name}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                  onClick={() => removeUploadedFile(file.id)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Message Input */}
-      <footer className="border-t bg-card/50 backdrop-blur-sm p-6">
-        <form onSubmit={handleSubmit} className="flex gap-4 items-end">
+      <footer className="flex-shrink-0 border-t bg-card/50 backdrop-blur-sm p-4 lg:p-6">
+        <form onSubmit={handleSubmit} className="flex gap-2 lg:gap-4 items-end">
           <div className="flex-1 relative">
             <Textarea
               ref={textareaRef}
@@ -235,15 +278,15 @@ export function ChatArea() {
                 setMessageError(null)
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
-              className={`min-h-[60px] max-h-[200px] resize-none pr-12 bg-background transition-colors ${
+              placeholder="Type a message..."
+              className={`min-h-[52px] max-h-[200px] resize-none pr-12 bg-background transition-colors ${
                 messageError ? 'border-destructive focus:border-destructive' : 'border-border focus:border-primary'
               }`}
               disabled={state.isLoading}
               aria-invalid={!!messageError}
               aria-describedby={messageError ? 'message-error' : undefined}
             />
-            <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
+            <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
               {message.length > 0 && (
                 <span className={message.length > 1000 ? 'text-destructive' : ''}>
                   {message.length}/1000
@@ -252,11 +295,23 @@ export function ChatArea() {
             </div>
           </div>
           
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            className="h-[52px] px-4"
+            onClick={() => setShowFileUpload(true)}
+            disabled={state.isLoading}
+          >
+            <Paperclip className="h-5 w-5" />
+            <span className="sr-only">Attach files</span>
+          </Button>
+          
           <Button 
             type="submit" 
-            size="lg"
+            size="default"
             disabled={!message.trim() || state.isLoading || message.length > 1000}
-            className="h-[60px] px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200"
+            className="h-[52px] px-4 lg:px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200"
           >
             {state.isLoading ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -267,10 +322,9 @@ export function ChatArea() {
           </Button>
         </form>
         
-        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Press Enter to send, Shift+Enter for new line</span>
-          <div className="flex items-center gap-4">
-            <span>Powered by AI</span>
+        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+          <span className="hidden sm:inline">Enter to send • Shift+Enter for new line</span>
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
               <span>Online</span>
@@ -278,6 +332,28 @@ export function ChatArea() {
           </div>
         </div>
       </footer>
+
+      {/* File Upload Dialog */}
+      <Dialog open={showFileUpload} onOpenChange={setShowFileUpload}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Upload Files</DialogTitle>
+          </DialogHeader>
+          <FileUpload
+            onFilesUploaded={(files) => {
+              addUploadedFiles(files)
+              setShowFileUpload(false)
+              addToast({
+                type: 'success',
+                title: 'Files uploaded',
+                description: `${files.length} file(s) attached to your message`
+              })
+            }}
+            maxFiles={5}
+            maxSize={10}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
