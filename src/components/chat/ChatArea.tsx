@@ -223,11 +223,13 @@ export function ChatArea() {
           
           {state.isLoading && (
             <div className="flex gap-4 justify-start group">
-              <Avatar className="h-9 w-9 mt-1 ring-2 ring-primary/20">
-                <AvatarFallback className="bg-gradient-to-br from-primary to-purple-500 text-white">
-                  <Bot className="h-5 w-5" />
-                </AvatarFallback>
-              </Avatar>
+              <div className="flex-shrink-0">
+                <Avatar className="h-9 w-9 mt-1 ring-2 ring-primary/20">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-purple-500 text-white">
+                    <Bot className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+              </div>
               <Card className="bg-card border p-4 shadow-sm">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">

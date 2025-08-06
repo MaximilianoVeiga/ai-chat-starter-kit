@@ -118,7 +118,6 @@ html, body, #root {
   --sidebar-border: 0 0% 89.8%;
   --sidebar-ring: 0 0% 3.9%;
 }
-
 /* Minimalist Dark Theme */
 .dark {
   --background: 0 0% 3.9%;
@@ -199,5 +198,13 @@ html, body, #root {
   .border-soft {
     @apply border;
     border-color: hsl(var(--border) / 0.5);
+  }
+  
+  .modal-background {
+    background-color: hsl(var(--background));
+  }
+  .popover-background {
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
   }
 }

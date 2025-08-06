@@ -48,9 +48,6 @@ export const themeSchema = z.enum(['light', 'dark', 'system'])
 export const userSettingsSchema = z.object({
   theme: themeSchema,
   fontSize: fontSizeSchema,
-  soundEnabled: z.boolean(),
-  compactMode: z.boolean(),
-  showTimestamps: z.boolean()
 })
 
 // User data validation schema

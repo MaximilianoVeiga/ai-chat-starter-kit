@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect } from 'react'
+import { useReducer, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { Conversation, Message } from '@/types/chat'
 import { conversationStorage, currentConversationStorage } from '@/lib/storage'

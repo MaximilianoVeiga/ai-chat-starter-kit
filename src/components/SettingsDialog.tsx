@@ -11,13 +11,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/toast'
-import { useUserSettings } from '@/contexts/UserSettingsContext'
+import { useUserSettings } from '@/hooks/useUserSettings'
 import { 
-  Settings, User, Palette, Type, Volume2, VolumeX,
-  Minimize2, Clock, Save
+  Settings, User, Palette, Type, Save
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 
@@ -91,15 +89,17 @@ export function SettingsDialog({ children }: SettingsDialogProps) {
               <Label className="text-sm font-medium">Profile</Label>
             </div>
             
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="text-lg bg-gradient-to-br from-primary to-purple-500 text-white">
-                  {tempUserData.name.slice(0, 2).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-2">
-                <div>
-                  <Label htmlFor="name" className="text-xs">Display Name</Label>
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="text-lg bg-gradient-to-br from-primary to-purple-500 text-white">
+                    {tempUserData.name.slice(0, 2).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <div className="flex-1 space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="name" className="text-xs text-muted-foreground">Display Name</Label>
                   <Input
                     id="name"
                     value={tempUserData.name}
@@ -108,8 +108,8 @@ export function SettingsDialog({ children }: SettingsDialogProps) {
                     className="h-8"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="email" className="text-xs">Email</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="text-xs text-muted-foreground">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -139,64 +139,25 @@ export function SettingsDialog({ children }: SettingsDialogProps) {
                 <Label>Font Size</Label>
               </div>
               <div className="flex gap-1">
-                {(['small', 'medium', 'large'] as const).map((size) => (
-                  <Button
-                    key={size}
-                    variant={settings.fontSize === size ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-8 px-3 capitalize"
-                    onClick={() => updateSettings({ fontSize: size })}
-                  >
-                    {size}
-                  </Button>
-                ))}
+                {(['small', 'medium', 'large'] as const).map((size) => {
+                  const isSelected = settings.fontSize === size;
+                  return (
+                    <Button
+                      key={size}
+                      variant={isSelected ? 'default' : 'ghost'}
+                      size="sm"
+                      className={`h-8 px-3 capitalize ${
+                        isSelected 
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
+                          : 'hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                      onClick={() => updateSettings({ fontSize: size })}
+                    >
+                      {size}
+                    </Button>
+                  );
+                })}
               </div>
-            </div>
-
-            {/* Compact Mode */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Minimize2 className="h-4 w-4" />
-                <Label>Compact Mode</Label>
-              </div>
-              <Switch
-                checked={settings.compactMode}
-                onCheckedChange={(checked: boolean) => updateSettings({ compactMode: checked })}
-              />
-            </div>
-
-            {/* Show Timestamps */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <Label>Show Timestamps</Label>
-              </div>
-              <Switch
-                checked={settings.showTimestamps}
-                onCheckedChange={(checked: boolean) => updateSettings({ showTimestamps: checked })}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Audio */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              {settings.soundEnabled ? (
-                <Volume2 className="h-4 w-4" />
-              ) : (
-                <VolumeX className="h-4 w-4" />
-              )}
-              <Label className="text-sm font-medium">Audio</Label>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label>Sound Effects</Label>
-              <Switch
-                checked={settings.soundEnabled}
-                onCheckedChange={(checked: boolean) => updateSettings({ soundEnabled: checked })}
-              />
             </div>
           </div>
         </div>

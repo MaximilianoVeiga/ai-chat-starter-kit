@@ -1,21 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { settingsStorage, userDataStorage, type UserSettings } from '@/lib/storage'
-
-interface UserData {
-  name: string
-  email: string
-  avatar?: string
-}
-
-interface UserSettingsContextType {
-  settings: UserSettings
-  userData: UserData
-  updateSettings: (newSettings: Partial<UserSettings>) => void
-  updateUserData: (newUserData: Partial<UserData>) => void
-  resetSettings: () => void
-}
-
-const UserSettingsContext = createContext<UserSettingsContextType | undefined>(undefined)
+import { UserSettingsContext, type UserData } from '@/hooks/useUserSettings'
 
 export function UserSettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<UserSettings>(() => settingsStorage.load())
@@ -49,9 +34,6 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     const defaultSettings: UserSettings = {
       theme: 'system',
       fontSize: 'medium',
-      soundEnabled: true,
-      compactMode: false,
-      showTimestamps: true
     }
     setSettings(defaultSettings)
     settingsStorage.save(defaultSettings)
@@ -85,12 +67,4 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       {children}
     </UserSettingsContext.Provider>
   )
-}
-
-export function useUserSettings() {
-  const context = useContext(UserSettingsContext)
-  if (!context) {
-    throw new Error('useUserSettings must be used within a UserSettingsProvider')
-  }
-  return context
 }

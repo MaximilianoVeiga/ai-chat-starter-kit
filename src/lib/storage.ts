@@ -3,9 +3,6 @@ import type { Conversation } from '@/types/chat'
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system'
   fontSize: 'small' | 'medium' | 'large'
-  soundEnabled: boolean
-  compactMode: boolean
-  showTimestamps: boolean
 }
 
 const STORAGE_KEYS = {
@@ -118,7 +115,11 @@ export const currentConversationStorage = {
 // User settings storage
 export const settingsStorage = {
   save: (settings: Partial<UserSettings>) => {
-    const current = settingsStorage.load()
+    const data = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS)
+    const current = safeJsonParse(data, {
+      theme: 'system',
+      fontSize: 'medium',
+    })
     const updated = { ...current, ...settings }
     localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(updated))
   },
@@ -128,9 +129,6 @@ export const settingsStorage = {
     return safeJsonParse(data, {
       theme: 'system',
       fontSize: 'medium',
-      soundEnabled: true,
-      compactMode: false,
-      showTimestamps: true
     })
   },
 

@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast'
 import { validateEmail } from '@/lib/validation'
 import { userDataStorage } from '@/lib/storage'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -72,6 +73,11 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       <div className="w-full max-w-md space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -79,12 +85,6 @@ export function LoginPage() {
           <p className="mt-2 text-muted-foreground">
             Sign in to your account to continue
           </p>
-          {/* Tailwind Test Indicator */}
-          <div className="mt-4 p-2 bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="text-xs text-blue-800 dark:text-blue-200">
-              🎨 Tailwind CSS is working! This should be blue in light mode and darker blue in dark mode.
-            </p>
-          </div>
         </div>
 
         {/* Login Card */}

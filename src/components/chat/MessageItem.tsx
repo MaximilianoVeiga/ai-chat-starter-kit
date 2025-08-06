@@ -96,11 +96,13 @@ export function MessageItem({
       className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'} group`}
     >
       {message.role === 'assistant' && (
-        <Avatar className="h-9 w-9 mt-1 ring-2 ring-primary/20">
-          <AvatarFallback className="bg-gradient-to-br from-primary to-purple-500 text-white">
-            <Bot className="h-5 w-5" />
-          </AvatarFallback>
-        </Avatar>
+        <div className="flex-shrink-0">
+          <Avatar className="h-9 w-9 mt-1 ring-2 ring-primary/20">
+            <AvatarFallback className="bg-gradient-to-br from-primary to-purple-500 text-white">
+              <Bot className="h-5 w-5" />
+            </AvatarFallback>
+          </Avatar>
+        </div>
       )}
       
       <div className={`max-w-[75%] ${message.role === 'user' ? 'order-first' : ''}`}>
@@ -157,6 +159,8 @@ export function MessageItem({
                     variant="ghost"
                     className={`h-7 px-2 ${reaction === 'like' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' : ''}`}
                     onClick={() => handleReaction('like')}
+                    aria-label="Like this response"
+                    title="Like this response"
                   >
                     <ThumbsUp className="h-3 w-3" />
                   </Button>
@@ -165,6 +169,8 @@ export function MessageItem({
                     variant="ghost"
                     className={`h-7 px-2 ${reaction === 'dislike' ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400' : ''}`}
                     onClick={() => handleReaction('dislike')}
+                    aria-label="Dislike this response"
+                    title="Dislike this response"
                   >
                     <ThumbsDown className="h-3 w-3" />
                   </Button>
@@ -179,7 +185,7 @@ export function MessageItem({
           message.role === 'user' ? 'justify-end' : 'justify-start'
         }`}>
           {showTimestamp && (
-            <p className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+            <p className="text-xs text-muted-foreground">
               {formatMessageTime(message.timestamp)}
             </p>
           )}
@@ -232,11 +238,13 @@ export function MessageItem({
       </div>
 
       {message.role === 'user' && (
-        <Avatar className="h-9 w-9 mt-1 ring-2 ring-muted">
-          <AvatarFallback className="bg-muted">
-            <User className="h-5 w-5" />
-          </AvatarFallback>
-        </Avatar>
+        <div className="flex-shrink-0">
+          <Avatar className="h-9 w-9 mt-1 ring-2 ring-muted">
+            <AvatarFallback className="bg-muted">
+              <User className="h-5 w-5" />
+            </AvatarFallback>
+          </Avatar>
+        </div>
       )}
     </div>
   )
