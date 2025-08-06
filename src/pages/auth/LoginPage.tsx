@@ -79,6 +79,12 @@ export function LoginPage() {
           <p className="mt-2 text-muted-foreground">
             Sign in to your account to continue
           </p>
+          {/* Tailwind Test Indicator */}
+          <div className="mt-4 p-2 bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-xs text-blue-800 dark:text-blue-200">
+              🎨 Tailwind CSS is working! This should be blue in light mode and darker blue in dark mode.
+            </p>
+          </div>
         </div>
 
         {/* Login Card */}

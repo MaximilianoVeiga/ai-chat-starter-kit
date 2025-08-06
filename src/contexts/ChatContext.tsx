@@ -1,32 +1,11 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react'
+import React, { useReducer, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { Conversation, Message } from '@/types/chat'
 import { conversationStorage, currentConversationStorage } from '@/lib/storage'
 import { generateId, generateConversationTitle } from '@/lib/utils-enhanced'
 import { useToast } from '@/components/ui/toast'
 import { openAIService, type FileInfo, type ChatMessage } from '@/services/openai'
-
-interface ChatState {
-  conversations: Conversation[]
-  currentConversationId: string | null
-  isLoading: boolean
-  uploadedFiles: FileInfo[]
-  sessionId: string | null
-}
-
-type ChatAction =
-  | { type: 'SET_CONVERSATIONS'; payload: Conversation[] }
-  | { type: 'ADD_CONVERSATION'; payload: Conversation }
-  | { type: 'SET_CURRENT_CONVERSATION'; payload: string }
-  | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }
-  | { type: 'EDIT_MESSAGE'; payload: { conversationId: string; messageId: string; content: string } }
-  | { type: 'DELETE_MESSAGE'; payload: { conversationId: string; messageId: string } }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'DELETE_CONVERSATION'; payload: string }
-  | { type: 'SET_UPLOADED_FILES'; payload: FileInfo[] }
-  | { type: 'ADD_UPLOADED_FILE'; payload: FileInfo }
-  | { type: 'REMOVE_UPLOADED_FILE'; payload: string }
-  | { type: 'SET_SESSION_ID'; payload: string | null }
+import { ChatContext, type ChatState, type ChatAction } from './ChatContextDefinition'
 
 const initialState: ChatState = {
   conversations: [],
@@ -97,7 +76,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       }
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload }
-    case 'DELETE_CONVERSATION':
+    case 'DELETE_CONVERSATION': {
       const remainingConvs = state.conversations.filter(conv => conv.id !== action.payload)
       const newCurrentId = state.currentConversationId === action.payload
         ? (remainingConvs.length > 0 ? remainingConvs[0].id : null)
@@ -109,6 +88,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         currentConversationId: newCurrentId,
         sessionId: state.currentConversationId === action.payload ? null : state.sessionId
       }
+    }
     case 'SET_UPLOADED_FILES':
       return { ...state, uploadedFiles: action.payload }
     case 'ADD_UPLOADED_FILE':
@@ -122,21 +102,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
   }
 }
 
-interface ChatContextType {
-  state: ChatState
-  dispatch: React.Dispatch<ChatAction>
-  createNewConversation: () => void
-  sendMessage: (content: string, fileIds?: string[]) => void
-  editMessage: (messageId: string, content: string) => void
-  deleteMessage: (messageId: string) => void
-  deleteConversation: (conversationId: string) => void
-  getCurrentConversation: () => Conversation | null
-  addUploadedFiles: (files: FileInfo[]) => void
-  removeUploadedFile: (fileId: string) => void
-  clearUploadedFiles: () => void
-}
 
-const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState)
@@ -212,13 +178,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       // Get current conversation
       const currentConv = state.conversations.find(c => c.id === state.currentConversationId)
-      
-      // Prepare messages for API
-      const messages = currentConv?.messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-        ...(msg.attachments && { attachments: msg.attachments.map(id => ({ file_id: id })) })
-      })) || []
+      if (!currentConv) {
+        throw new Error('No current conversation')
+      }
 
       // Create user message
       const userMessage: Message = {
@@ -230,13 +192,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }
 
       // Convert all messages to ChatMessage format for API
-      const allMessages = [...currentConversation.messages, userMessage]
+      const allMessages = [...currentConv.messages, userMessage]
       const chatMessages = allMessages.map((msg): ChatMessage => ({
         id: msg.id,
         role: msg.role,
         content: msg.content,
         timestamp: msg.timestamp.toISOString(),
-        files: msg.attachments?.map(id => ({ id, name: '', size: 0, type: '', uploadedAt: new Date().toISOString() }))
+        files: msg.attachments?.map((id: string) => ({ id, name: '', size: 0, type: '', uploadedAt: new Date().toISOString() }))
       }))
 
       // Call OpenAI API
@@ -366,7 +328,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_UPLOADED_FILES', payload: [] })
   }
 
-  const value: ChatContextType = {
+  const value = {
     state,
     dispatch,
     createNewConversation,
@@ -383,10 +345,3 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
 }
 
-export function useChat() {
-  const context = useContext(ChatContext)
-  if (!context) {
-    throw new Error('useChat must be used within a ChatProvider')
-  }
-  return context
-}

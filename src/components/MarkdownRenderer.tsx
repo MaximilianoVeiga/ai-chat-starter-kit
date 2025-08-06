@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils'
-import { useMarkdownDetection } from '@/hooks/useMarkdownDetection'
 
 interface MarkdownRendererProps {
   content: string
@@ -98,5 +97,4 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
   )
 }
 
-// Export separately to avoid Fast Refresh issues
 

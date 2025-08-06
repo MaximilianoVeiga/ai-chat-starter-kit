@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { useChat } from '@/contexts/ChatContext'
+import { useChat } from '@/hooks/useChat'
 import { Button } from '@/components/ui/button'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'

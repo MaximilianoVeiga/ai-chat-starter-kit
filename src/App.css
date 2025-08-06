@@ -158,10 +158,11 @@ html, body, #root {
 /* Tailwind base layer overrides */
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
   
   /* Typography - minimalist approach */
@@ -191,10 +192,12 @@ html, body, #root {
   }
   
   .glass {
-    @apply bg-background/80 backdrop-blur-sm;
+    background-color: hsl(var(--background) / 0.8);
+    @apply backdrop-blur-sm;
   }
   
   .border-soft {
-    @apply border border-border/50;
+    @apply border;
+    border-color: hsl(var(--border) / 0.5);
   }
 }

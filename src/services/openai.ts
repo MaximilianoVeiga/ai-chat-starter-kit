@@ -27,18 +27,27 @@ export interface ChatCompletionRequest {
 
 export interface ChatCompletionResponse {
   id: string
+  object?: string
+  created?: number
   choices: Array<{
+    index?: number
     message: {
       role: 'assistant'
       content: string
     }
-    finishReason: string
+    finish_reason?: string
+    finishReason?: string // Support both formats
   }>
   usage: {
-    promptTokens: number
-    completionTokens: number
-    totalTokens: number
+    prompt_tokens?: number
+    completion_tokens?: number
+    total_tokens?: number
+    // Also support camelCase for compatibility
+    promptTokens?: number
+    completionTokens?: number
+    totalTokens?: number
   }
+  session_id?: string // Custom field from your backend
 }
 
 interface OpenAIFile {
@@ -47,6 +56,16 @@ interface OpenAIFile {
   bytes: number
   purpose: string
   created_at: number
+}
+
+interface APIResponseChoice {
+  index?: number
+  message?: {
+    role: string
+    content: string
+  }
+  finish_reason?: string
+  finishReason?: string
 }
 
 class OpenAIService {
@@ -194,7 +213,22 @@ class OpenAIService {
       })
 
       const result = await response.json()
-      return result
+      
+      // Normalize the response to handle both snake_case and camelCase
+      return {
+        ...result,
+        choices: result.choices?.map((choice: APIResponseChoice) => ({
+          ...choice,
+          finishReason: choice.finish_reason || choice.finishReason
+        })),
+        usage: {
+          promptTokens: result.usage?.prompt_tokens || result.usage?.promptTokens || 0,
+          completionTokens: result.usage?.completion_tokens || result.usage?.completionTokens || 0,
+          totalTokens: result.usage?.total_tokens || result.usage?.totalTokens || 0,
+          // Also preserve original format
+          ...result.usage
+        }
+      }
     } catch (error) {
       console.error('Chat completion error:', error)
       throw new Error(error instanceof Error ? error.message : 'Failed to create chat completion')

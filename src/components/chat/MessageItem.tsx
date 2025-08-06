@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
-import { MarkdownRenderer, useMarkdownDetection } from '@/components/MarkdownRenderer'
+import { MarkdownRenderer } from '@/components/MarkdownRenderer'
+import { useMarkdownDetection } from '@/hooks/useMarkdownDetection'
 import { 
   Bot, User, Copy, Edit2, Trash2, Check, X, 
   MoreHorizontal, ThumbsUp, ThumbsDown 
