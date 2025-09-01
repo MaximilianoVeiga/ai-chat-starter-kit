@@ -30,6 +30,7 @@ export function ChatArea() {
   const [showFileUpload, setShowFileUpload] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const MAX_MESSAGE_LENGTH = 4000
 
   const currentConversation = getCurrentConversation()
 
@@ -61,7 +62,7 @@ export function ChatArea() {
   useEffect(() => {
     // Scroll to bottom when new messages arrive
     if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      const scrollElement = scrollAreaRef.current.querySelector('[data-slot="scroll-area-viewport"]')
       if (scrollElement) {
         scrollElement.scrollTop = scrollElement.scrollHeight
       }
@@ -85,8 +86,8 @@ export function ChatArea() {
     }
 
     // Rate limiting check
-    const userKey = `user-${Date.now()}`
-    if (!checkRateLimit(userKey, 20, 60000)) { // 20 messages per minute
+    const rateKey = 'send-message-global'
+    if (!checkRateLimit(rateKey, 20, 60000)) { // 20 messages per minute
       addToast({
         type: 'warning',
         title: 'Rate limit exceeded',
@@ -290,8 +291,8 @@ export function ChatArea() {
             />
             <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
               {message.length > 0 && (
-                <span className={message.length > 1000 ? 'text-destructive' : ''}>
-                  {message.length}/1000
+                <span className={message.length > MAX_MESSAGE_LENGTH ? 'text-destructive' : ''}>
+                  {message.length}/{MAX_MESSAGE_LENGTH}
                 </span>
               )}
             </div>
@@ -312,7 +313,7 @@ export function ChatArea() {
           <Button 
             type="submit" 
             size="default"
-            disabled={!message.trim() || state.isLoading || message.length > 1000}
+            disabled={!message.trim() || state.isLoading || message.length > MAX_MESSAGE_LENGTH}
             className="h-[52px] px-4 lg:px-6 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-200"
           >
             {state.isLoading ? (
